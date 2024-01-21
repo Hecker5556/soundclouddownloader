@@ -118,7 +118,8 @@ class scdl:
                         allinfo[os.path.join(foldername, filename)] = data2
                         progress.update(1)
                 progress.close()
-
+                ## just incase all already exist
+                allinfo["filelist"] = [os.path.join(foldername, filename) for filename in os.listdir(foldername)]
                 return allinfo
 
 
