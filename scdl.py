@@ -1,5 +1,4 @@
 import asyncio, aiohttp, aiofiles, re, json, os, shutil, random, logging, argparse
-from env import clientid
 from typing import Literal
 from tqdm.asyncio import tqdm
 
@@ -34,7 +33,7 @@ class scdl:
     class novalidformat(Exception):
         def __init__(self, *args: object) -> None:
             super().__init__(*args)
-    async def download(link: str, protocol: Literal['hls', 'progressive'] = 'progressive', 
+    async def download(link: str, clientid: str, protocol: Literal['hls', 'progressive'] = 'progressive', 
                        format_audio: Literal['mpeg', 'opus'] = 'mpeg', verbose=False):
         """
         link (str): link to a song
@@ -118,7 +117,8 @@ class scdl:
                         allinfo[os.path.join(foldername, filename)] = data2
                         progress.update(1)
                 progress.close()
-
+                ## just incase all already exist
+                allinfo["filelist"] = [os.path.join(foldername, filename) for filename in os.listdir(foldername)]
                 return allinfo
 
 
@@ -194,10 +194,14 @@ class scdl:
                         progress.update(len(chunk))
             
 if __name__ == "__main__":
+    try:
+        from env import clientid
+    except:
+        pass
     parser = argparse.ArgumentParser(description='download soundcloud songs and playlists')
     parser.add_argument("link", help='link to the song/playlist')
     parser.add_argument("--protocol", "-p", choices=['hls', 'progressive'], default='progressive', help='which protocol to use to download (hls is fragmented, progressive is direct link)')
     parser.add_argument("--format-audio", "-f", choices=['mpeg', 'opus'], default = 'mpeg', help='which format to download, mpeg being mp3, opus being ogg')
     parser.add_argument("--verbose", "-v", action="store_true", help="whether to directly show downloads happening and whatnot (if off only shows progress of downloading every song in playlist)")
     args = parser.parse_args()
-    asyncio.run(scdl.download(args.link, args.protocol, args.format_audio, args.verbose))
+    asyncio.run(scdl.download(args.link, clientid,  args.protocol, args.format_audio, args.verbose))
