@@ -1,4 +1,4 @@
-import asyncio, aiohttp, aiofiles, re, json, os, shutil, random, logging, argparse
+import asyncio, aiohttp,  re, json, os, shutil, random, logging, argparse
 from typing import Literal
 from tqdm.asyncio import tqdm
 from datetime import datetime, timedelta
@@ -187,10 +187,10 @@ class scdl:
             filename = data.get('title') + ('.mp3' if format_audio == 'mpeg' else '.ogg')
             filename = "".join([x for x in filename if x not in '"\\/:*?<>|()'])
             filenames = sorted(filenames, key = lambda x: int(x.split('a')[1].split('.')[0]))
-            async with aiofiles.open(filename, 'wb') as f1:
+            with open(filename, 'wb') as f1:
                 for file in filenames:
-                    async with aiofiles.open(file, 'rb') as f2:
-                        await f1.write(await f2.read())
+                    with open(file, 'rb') as f2:
+                        f1.write(f2.read())
                     os.remove(file)
             progress.close()
         else:
@@ -203,7 +203,7 @@ class scdl:
                         chunk = await r.content.read(1024)
                         if not chunk:
                             break
-                        await f1.write(chunk)
+                        f1.write(chunk)
                         progress.update(len(chunk))
                 progress.close()
         return filename, data
@@ -217,7 +217,7 @@ class scdl:
                         chunk = await r.content.read(1024)
                         if not chunk:
                             break
-                        await f1.write(chunk)
+                        f1.write(chunk)
                         progress.update(len(chunk))
     class novalidformat(Exception):
         def __init__(self, *args: object) -> None:
