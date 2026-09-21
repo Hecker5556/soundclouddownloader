@@ -26,7 +26,7 @@ class scdl:
                             for index, j in enumerate(i['data']['tracks']):
                                 data[index] = j.get('id')
                             data['title'] = i.get('data').get('title')
-                            logging.debug(data['title'])
+                            self.logger.debug(data['title'])
                             break
                         elif i.get('data').get('media'):
                             for index, j in enumerate(i['data']['media']['transcodings']):
@@ -58,16 +58,23 @@ class scdl:
         return self.clientid
 
     async def download(self, link: str, protocol: Literal['hls', 'progressive'] = 'progressive', 
-                       format_audio: Literal['mpeg', 'opus'] = 'mpeg', verbose=False):
+                       format_audio: Literal['mpeg', 'opus'] = 'mpeg', verbose=False, nodownload: bool = False):
         """
-        link (str): link to a song
-        protocol ('hls' or 'progressive') (progressive by default): whether to download segmented version or direct
-        format_audio ('mpeg' or 'opus') (mpeg by default): whether to download mpeg encoded (mp3) or opus encoded (ogg) audio
+        Args:
+            link (str): link to a song
+            protocol ('hls' or 'progressive') (progressive by default): whether to download segmented version or direct
+            format_audio ('mpeg' or 'opus') (mpeg by default): whether to download mpeg encoded (mp3) or opus encoded (ogg) audio
+            nodownload (bool, optional): skip downloading
         """
-        if verbose:
-            logging.basicConfig(level=logging.DEBUG, format='%(message)s')
-        else:
-            logging.basicConfig(level=logging.INFO, format='%(message)s')
+        self.logger = logging.getLogger(__name__)
+        if self.logger.hasHandlers() is False:
+            handler = logging.StreamHandler()
+            if verbose:
+                handler.setLevel(logging.DEBUG)
+                self.logger.setLevel(logging.DEBUG)
+            else:
+                handler.setLevel(logging.INFO)
+            self.logger.addHandler(handler)
         async with aiohttp.ClientSession() as session:
             self.session = session
             if not self.clientid:
@@ -78,7 +85,7 @@ class scdl:
                 ids = [str(x) for x in data.values() if x != 'title']
                 chunks, remainder = divmod(len(ids), 10)
                 start = 0
-                logging.info(f'grabbing info for {len(ids)} songs...')
+                self.logger.info(f'grabbing info for {len(ids)} songs...')
                 for _ in range(chunks):
 
                     params = {
@@ -100,7 +107,7 @@ class scdl:
                 'client_id': self.clientid
             }
             if isplaylist:
-                logging.info('downloading playlist...')
+                self.logger.info('downloading playlist...')
                 allinfo = {}
                 foldername = "".join([x for x in data['title'] if x not in '"\\/:*?<>|()'])
                 if not os.path.exists(foldername):
@@ -111,7 +118,7 @@ class scdl:
                         exists = False
                         for i in os.listdir(foldername):
                             if "".join([x for x in medias['title'] if x not in '"\\/:*?<>|()']) in i:
-                                logging.debug(f'{medias["title"]} already in playlist! skipping...')
+                                self.logger.debug(f'{medias["title"]} already in playlist! skipping...')
                                 progress.update(1)
                                 exists = True
                                 break
@@ -127,7 +134,7 @@ class scdl:
                                     url = url.get('url')
                                 break
                         if not url:
-                            logging.info(f'couldnt get right format for {medias["title"]}')
+                            self.logger.info(f'couldnt get right format for {medias["title"]}')
                             url = media[0].get('url')
                             prot = media[0].get('format').get('protocol')
                             async with session.get(url, params=params) as r:
@@ -138,7 +145,7 @@ class scdl:
                         try:
                             shutil.move(filename, foldername)
                         except shutil.Error:
-                            logging.debug(f'\noverwritten {filename}...\n')
+                            self.logger.debug(f'\noverwritten {filename}...\n')
                             os.remove(os.path.join(foldername, filename))
                             shutil.move(filename, foldername)
                         allinfo[os.path.join(foldername, filename)] = data2
@@ -233,4 +240,4 @@ if __name__ == "__main__":
     parser.add_argument("--format-audio", "-f", choices=['mpeg', 'opus'], default = 'mpeg', help='which format to download, mpeg being mp3, opus being ogg')
     parser.add_argument("--verbose", "-v", action="store_true", help="whether to directly show downloads happening and whatnot (if off only shows progress of downloading every song in playlist)")
     args = parser.parse_args()
-    asyncio.run(scdl().download(args.link,  args.protocol, args.format_audio, args.verbose))
+    print(asyncio.run(scdl().download(args.link,  args.protocol, args.format_audio, args.verbose)))
