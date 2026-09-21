@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soundclouddownloader"
+version = "0.1.0"
+description = "Download songs and playlists from soundcloud"
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+"aiohttp",
+"tqdm",
+]
